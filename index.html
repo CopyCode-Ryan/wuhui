@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf8" />
+    <title>武汉加油</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <meta http-equiv="x-dns-prefetch-control" content="on">
+    <meta http-equiv="Cache-Control" content="no-siteapp">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="css/base.css" />
+</head>
+
+<body>
+    <div class="main">
+        <div class="block"></div>
+        <div class="title"></div>
+        <div id="head" class="center">
+        </div>
+        <div class="btn pick">选择相册照片</div>
+        <input type="file" accept="image/*" id="file" style="display: none;">
+    </div>
+
+    <div id="canvas-wrap">
+        <div class="head2">
+            <img class="tb jiayou1" src="">
+            <img class="tb jiayou2" src="">
+            <img class="tb jiayou3" src="">
+            <img class="tb jiayou4" src="">
+            <img class="tb jiayou5" src="">
+            <img class="tb jiayou6" src="">
+            <img class="default" src="img/head.png" alt="">
+        </div>
+    </div>
+
+    <div class="mask">
+        <div class="wh">
+            <div class="tips">
+                <div class="mask_title">制作成功</div>
+                <div class="newimg">
+                    <img src="" id="wuhanjiayou">
+                </div>
+                <div class="changan">长按保存头像</div>
+            </div>
+            <div class="btn mask_btn">重新选择</div>
+        </div>
+    </div>
+
+    <!-- 裁剪窗口 -->
+    <div class="cut">
+        <div class="newpic"></div>
+        <div class="cut_btn">
+            <div class="cut_tips">拖拽或缩放图片，框内部分即为选中的头像</div>
+            <div class="cut_cancel">取消</div>
+            <div class="cut_complete">完成</div>
+        </div>
+    </div>
+</body>
+<script src="js/jquery.js"></script>
+<script src="js/html2canvas.min.js"></script>
+<script src="js/hammer.min.js"></script>
+<script src="js/lrz.all.bundle.js"></script>
+<script src="js/iscroll-zoom-min.js"></script>
+<script src="js/PhotoClip.js"></script>
+<script type="text/javascript">
+    function initHeadIcon(line) {
+        $(".center").html();
+        $(".head2").html();
+        var center = '<div class="makeimg" style="display: none;color: #fff;font-weight: 700">点击选择头像</div>';
+        var head = '';
+        var count = 1;
+        for (var i = 0; i < line; i++) {
+            for (var j = 1; j <= 3; j++) {
+                var jiayou = 'jiayou' + count;
+                count ++;
+                var name = 'head/jiayou';
+                var temp = i * 10 + j;
+                name = name + temp + ".png";
+                center += '<div class="c_head">' +
+                    '<img class="c_h_k '+ jiayou +'" src="' + name + '">' +
+                    '<img class="default" src="img/head.png" alt=""></div>';
+                head += '<img class="tb '+ jiayou +'" src="'+ name +'">';
+            }
+        }
+        head += '<img class="default" src="img/head.png" alt="">';
+       $(".center").html(center);
+       $(".head2").html(head);
+    }
+    
+</script>
+<script>
+    $(function () {
+        initHeadIcon(2);
+        var headimg = '';
+        //选择相册
+        $(".pick").click(function () {
+            $("#file").click();
+        })
+        //裁剪窗口
+        $("#file").change(function () {
+            $(".cut").show();
+        })
+        $(".cut_cancel").click(function () {
+            $(".cut").hide();
+        })
+        $(".cut_complete").click(function () {
+            $(".cut").hide();
+        })
+        $(".mask_btn").click(function () {
+            $(".mask").hide();
+        })
+        $(".c_head").click(function () {
+            if (headimg.length == 0) {
+                return;
+            }
+            $('.tb').hide();
+            console.log($(this).index() - 1);
+            $('.tb').eq($(this).index() - 1).show();
+            var domElement = document.querySelector('#canvas-wrap');
+            var canvasContent = domElement;//需要截图的包裹的（原生的）DOM对象
+
+            var cwidth = canvasContent.offsetWidth;//获取dom宽度
+            var cheight = canvasContent.offsetHeight;//获取dom高度
+
+            var canvas = document.createElement('canvas');//创建一个canvas节点
+            var scale = 2 //定义任意放大倍数，支持小数
+            canvas.width = cwidth * scale;//定义canvas宽度*缩放
+            canvas.height = cheight * scale;//定义canvas高度*缩放
+            canvas.getContext("2d").scale(scale, scale); //获取context,设置scale
+
+            var opts = {
+                scale: scale, // 添加的scale 参数
+                canvas: canvas, //自定义 canvas
+                logging: false, //日志开关，便于查看html2canvas的内部执行流程
+                width: cwidth, //dom 原始宽度
+                height: cheight,
+                useCORS: true // 【重要】开启跨域配置,
+            }
+
+            html2canvas(canvasContent, opts).then(function (canvas) {
+                var context = canvas.getContext('2d');
+                // 【重要】关闭抗锯齿
+                context.mozImageSmoothingEnabled = false;
+                context.webkitImageSmoothingEnabled = false;
+                context.msImageSmoothingEnabled = false;
+                context.imageSmoothingEnabled = false;
+
+                var newurl = canvas.toDataURL("jpg/jpeg", 1.0);
+                $('#wuhanjiayou').attr('src', newurl)
+                $('.mask').show();
+            });
+        })
+        // 裁图
+        var clipArea = new PhotoClip(".newpic", {
+            size: [260, 260],
+            outputSize: [640, 640],
+            file: "#file",
+            view: "",
+            ok: ".cut_complete",
+            done: function (dataURL) {
+                headimg = dataURL;
+                $('.default').attr('src', dataURL);
+                showtips();
+            },
+        });
+
+        var showflag = false;
+        // 提示弹窗
+        var showtips = function () {
+            if (!showflag) {
+                showflag = true;
+                $('.makeimg').show();
+                var showtime = setTimeout(function () {
+                    $('.makeimg').hide();
+                    clearTimeout(showtime);
+                    showflag = false;
+                }, 3000)
+            }
+        }
+    });
+</script>
+
+
+</html>
